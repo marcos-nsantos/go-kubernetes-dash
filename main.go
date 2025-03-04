@@ -29,6 +29,7 @@ func main() {
 	http.HandleFunc("/api/deployments", h.GetDeployments)
 	http.HandleFunc("/api/services", h.GetServices)
 	http.HandleFunc("/api/namespaces", h.GetNamespaces)
+	http.HandleFunc("/api/logs", h.GetPodLogs)
 
 	// Start server
 	addr := fmt.Sprintf(":%d", *port)

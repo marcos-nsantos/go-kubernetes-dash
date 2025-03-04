@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 )
 
 // Client provides access to the Kubernetes API through a proxy
@@ -49,6 +50,44 @@ func (c *Client) GetServices(namespace string) (map[string]interface{}, error) {
 		return c.get("/api/v1/services")
 	}
 	return c.get(fmt.Sprintf("/api/v1/namespaces/%s/services", namespace))
+}
+
+// GetPodLogs returns the logs for a specific pod and container
+func (c *Client) GetPodLogs(namespace, podName, containerName string, tailLines int) (string, error) {
+	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/log", namespace, podName)
+
+	// Build query parameters
+	params := url.Values{}
+	if containerName != "" {
+		params.Add("container", containerName)
+	}
+	if tailLines > 0 {
+		params.Add("tailLines", fmt.Sprintf("%d", tailLines))
+	}
+
+	// Add query parameters to path if any exist
+	if len(params) > 0 {
+		path = path + "?" + params.Encode()
+	}
+
+	url := c.baseURL + path
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", fmt.Errorf("error making request to %s: %v", url, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("received non-200 status code: %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	logs, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("error reading logs: %v", err)
+	}
+
+	return string(logs), nil
 }
 
 // get performs a GET request to the Kubernetes API proxy

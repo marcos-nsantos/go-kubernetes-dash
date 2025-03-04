@@ -6,7 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kubernetes Dashboard</title>
     <link rel="stylesheet" href="css/styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill='%231a73e8' d='M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.8l6 3.2-6 3-6-3 6-3.2zM4 16.5v-7l8 4v7l-8-4zm16 0l-8 4v-7l8-4v7z'/></svg>">
 </head>
 
 <body>
@@ -23,10 +27,41 @@
 
         <nav>
             <ul>
-                <li><a href="#" class="active" data-section="nodes">Nodes</a></li>
-                <li><a href="#" data-section="pods">Pods</a></li>
-                <li><a href="#" data-section="deployments">Deployments</a></li>
-                <li><a href="#" data-section="services">Services</a></li>
+                <li>
+                    <a href="#" class="active" data-section="nodes">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M4 4h16v4H4V4zm0 6h16v4H4v-4zm0 6h16v4H4v-4z" />
+                        </svg>
+                        Nodes
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-section="pods">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M12 2L2 7v10l10 5 10-5V7L12 2zm0 2.8l6 3.2-6 3-6-3 6-3.2zM4 16.5v-7l8 4v7l-8-4zm16 0l-8 4v-7l8-4v7z" />
+                        </svg>
+                        Pods
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-section="deployments">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M19 8l-4 4h3c0 3.31-2.69 6-6 6-1.01 0-1.97-.25-2.8-.7l-1.46 1.46C8.97 19.54 10.43 20 12 20c4.42 0 8-3.58 8-8h3l-4-4zM6 12c0-3.31 2.69-6 6-6 1.01 0 1.97.25 2.8.7l1.46-1.46C15.03 4.46 13.57 4 12 4c-4.42 0-8 3.58-8 8H1l4 4 4-4H6z" />
+                        </svg>
+                        Deployments
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-section="services">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-5.5-2.5l7.51-3.49L17.5 6.5 9.99 9.99 6.5 17.5zm5.5-6.6c.61 0 1.1.49 1.1 1.1s-.49 1.1-1.1 1.1-1.1-.49-1.1-1.1.49-1.1 1.1-1.1z" />
+                        </svg>
+                        Services
+                    </a>
+                </li>
             </ul>
         </nav>
 
@@ -34,31 +69,60 @@
             <section id="nodes" class="active">
                 <h2>Nodes</h2>
                 <div class="card-grid" id="nodes-container">
-                    <div class="loading">Loading...</div>
+                    <div class="loading">Loading nodes information...</div>
                 </div>
             </section>
 
             <section id="pods">
                 <h2>Pods</h2>
                 <div class="card-grid" id="pods-container">
-                    <div class="loading">Loading...</div>
+                    <div class="loading">Loading pods information...</div>
                 </div>
             </section>
 
             <section id="deployments">
                 <h2>Deployments</h2>
                 <div class="card-grid" id="deployments-container">
-                    <div class="loading">Loading...</div>
+                    <div class="loading">Loading deployments information...</div>
                 </div>
             </section>
 
             <section id="services">
                 <h2>Services</h2>
                 <div class="card-grid" id="services-container">
-                    <div class="loading">Loading...</div>
+                    <div class="loading">Loading services information...</div>
                 </div>
             </section>
         </main>
+
+        <footer>
+            <p>Connected to Kubernetes API Proxy</p>
+        </footer>
+    </div>
+
+    <!-- Logs Modal -->
+    <div id="logsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Pod Logs</h3>
+                <div class="modal-controls">
+                    <select id="containerSelect" class="container-select">
+                        <option value="">Loading containers...</option>
+                    </select>
+                    <select id="tailLines" class="tail-lines-select">
+                        <option value="100">Last 100 lines</option>
+                        <option value="500">Last 500 lines</option>
+                        <option value="1000">Last 1000 lines</option>
+                        <option value="5000">Last 5000 lines</option>
+                    </select>
+                    <button id="refreshLogs" class="refresh-button">Refresh</button>
+                    <button class="close-button">&times;</button>
+                </div>
+            </div>
+            <div class="modal-body">
+                <pre id="logsContent" class="logs-content">Loading logs...</pre>
+            </div>
+        </div>
     </div>
 
     <script src="js/script.js"></script>

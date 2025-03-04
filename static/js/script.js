@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Initialize tabs
+  // Initialize tabs with smooth transitions
   const tabs = document.querySelectorAll("nav a");
   const sections = document.querySelectorAll("section");
 
@@ -8,27 +8,37 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       const targetSection = tab.getAttribute("data-section");
 
+      // Add transition class to sections
+      sections.forEach((s) => (s.style.opacity = "0"));
+
       // Remove active class from all tabs and sections
       tabs.forEach((t) => t.classList.remove("active"));
       sections.forEach((s) => s.classList.remove("active"));
 
       // Add active class to clicked tab and corresponding section
       tab.classList.add("active");
-      document.getElementById(targetSection).classList.add("active");
 
-      // Load data for the selected section
-      loadData(targetSection);
+      // Delay the section activation for smooth transition
+      setTimeout(() => {
+        document.getElementById(targetSection).classList.add("active");
+        document.getElementById(targetSection).style.opacity = "1";
+        // Load data for the selected section
+        loadData(targetSection);
+      }, 150);
     });
   });
 
-  // Namespace selector
+  // Namespace selector with loading state
   const namespaceSelector = document.getElementById("namespace");
   namespaceSelector.addEventListener("change", () => {
     const activeSection = document.querySelector("section.active").id;
+    // Add loading state to the active section
+    const container = document.getElementById(`${activeSection}-container`);
+    container.innerHTML = '<div class="loading">Loading data...</div>';
     loadData(activeSection);
   });
 
-  // Load namespaces
+  // Load namespaces with loading state
   loadNamespaces();
 
   // Load initial data for the active section
@@ -59,25 +69,67 @@ async function loadNamespaces() {
   }
 }
 
-// Load data for the selected section
-async function loadData(section) {
-  const namespace = document.getElementById("namespace").value;
-  const url = namespace
-    ? `/api/${section}?namespace=${namespace}`
-    : `/api/${section}`;
-  const container = document.getElementById(`${section}-container`);
+// Add loading animation to containers
+function showLoading(containerId) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = `
+      <div class="loading">
+          <svg class="loading-spinner" viewBox="0 0 50 50">
+              <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+          </svg>
+          <p>Loading data...</p>
+      </div>
+  `;
+}
 
-  // Show loading indicator
-  container.innerHTML = '<div class="loading">Loading...</div>';
+// Add error state to containers
+function showError(containerId, error) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = `
+      <div class="error-state">
+          <svg viewBox="0 0 24 24" width="48" height="48">
+              <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+          </svg>
+          <p>Error loading data</p>
+          <p class="error-message">${error}</p>
+          <button onclick="retryLoad('${containerId}')">Try Again</button>
+      </div>
+  `;
+}
+
+// Add retry functionality
+function retryLoad(containerId) {
+  const section = containerId.replace("-container", "");
+  loadData(section);
+}
+
+// Update loadData function with loading states
+async function loadData(section) {
+  const container = document.getElementById(`${section}-container`);
+  const namespace = document.getElementById("namespace").value;
+
+  showLoading(`${section}-container`);
 
   try {
+    let url = `/api/${section}`;
+    if (namespace) {
+      url += `?namespace=${namespace}`;
+    }
+
     const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
     const data = await response.json();
 
     // Clear container
     container.innerHTML = "";
 
-    // Render the data based on the section
+    // Render data with fade-in animation
+    container.style.opacity = "0";
+
+    // Call appropriate render function
     switch (section) {
       case "nodes":
         renderNodes(data, container);
@@ -92,9 +144,14 @@ async function loadData(section) {
         renderServices(data, container);
         break;
     }
+
+    // Fade in the content
+    setTimeout(() => {
+      container.style.opacity = "1";
+    }, 50);
   } catch (error) {
     console.error(`Error loading ${section}:`, error);
-    container.innerHTML = `<div class="error">Error loading ${section}. Please try again later.</div>`;
+    showError(`${section}-container`, error.message);
   }
 }
 
@@ -195,9 +252,116 @@ function renderPods(data, container) {
                     }</span>
                 </p>
             </div>
+            <button class="view-logs-button" data-pod="${
+              pod.metadata?.name
+            }" data-namespace="${pod.metadata?.namespace}">View Logs</button>
         `;
+
+    // Add click handler for the logs button
+    const logsButton = card.querySelector(".view-logs-button");
+    logsButton.addEventListener("click", () => {
+      showLogs(pod);
+    });
+
     container.appendChild(card);
   });
+}
+
+// Logs modal functionality
+const modal = document.getElementById("logsModal");
+const closeButton = modal.querySelector(".close-button");
+const containerSelect = document.getElementById("containerSelect");
+const tailLinesSelect = document.getElementById("tailLines");
+const refreshButton = document.getElementById("refreshLogs");
+const logsContent = document.getElementById("logsContent");
+
+let currentPod = null;
+
+closeButton.addEventListener("click", () => {
+  modal.classList.remove("show");
+});
+
+modal.addEventListener("click", (e) => {
+  if (e.target === modal) {
+    modal.classList.remove("show");
+  }
+});
+
+refreshButton.addEventListener("click", () => {
+  if (currentPod) {
+    loadPodLogs(currentPod);
+  }
+});
+
+containerSelect.addEventListener("change", () => {
+  if (currentPod) {
+    loadPodLogs(currentPod);
+  }
+});
+
+tailLinesSelect.addEventListener("change", () => {
+  if (currentPod) {
+    loadPodLogs(currentPod);
+  }
+});
+
+function showLogs(pod) {
+  currentPod = pod;
+  modal.classList.add("show");
+
+  // Update container select options
+  containerSelect.innerHTML = '<option value="">Loading containers...</option>';
+
+  const containers = [];
+  if (pod.spec?.containers) {
+    containers.push(...pod.spec.containers.map((c) => c.name));
+  }
+  if (pod.spec?.initContainers) {
+    containers.push(...pod.spec.initContainers.map((c) => c.name));
+  }
+
+  containerSelect.innerHTML = containers
+    .map((name) => `<option value="${name}">${name}</option>`)
+    .join("");
+
+  // Load initial logs
+  loadPodLogs(pod);
+}
+
+async function loadPodLogs(pod) {
+  const namespace = pod.metadata?.namespace;
+  const podName = pod.metadata?.name;
+  const container = containerSelect.value;
+  const tailLines = tailLinesSelect.value;
+
+  if (!namespace || !podName) {
+    logsContent.textContent = "Error: Pod information is missing";
+    return;
+  }
+
+  logsContent.textContent = "Loading logs...";
+
+  try {
+    const params = new URLSearchParams({
+      namespace,
+      pod: podName,
+      tailLines,
+    });
+    if (container) {
+      params.append("container", container);
+    }
+
+    const response = await fetch(`/api/logs?${params}`);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const logs = await response.text();
+    logsContent.textContent = logs || "No logs available";
+  } catch (error) {
+    console.error("Error loading logs:", error);
+    logsContent.textContent = `Error loading logs: ${error.message}`;
+  }
 }
 
 // Render deployments in the container
