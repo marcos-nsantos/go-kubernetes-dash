@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kubernetes Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Kubernetes Dashboard</h1>
+            <div class="namespace-selector">
+                <label for="namespace">Namespace:</label>
+                <select id="namespace">
+                    <option value="">All Namespaces</option>
+                </select>
+            </div>
+        </header>
+
+        <nav>
+            <ul>
+                <li><a href="#" class="active" data-section="nodes">Nodes</a></li>
+                <li><a href="#" data-section="pods">Pods</a></li>
+                <li><a href="#" data-section="deployments">Deployments</a></li>
+                <li><a href="#" data-section="services">Services</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <section id="nodes" class="active">
+                <h2>Nodes</h2>
+                <div class="card-grid" id="nodes-container">
+                    <div class="loading">Loading...</div>
+                </div>
+            </section>
+
+            <section id="pods">
+                <h2>Pods</h2>
+                <div class="card-grid" id="pods-container">
+                    <div class="loading">Loading...</div>
+                </div>
+            </section>
+
+            <section id="deployments">
+                <h2>Deployments</h2>
+                <div class="card-grid" id="deployments-container">
+                    <div class="loading">Loading...</div>
+                </div>
+            </section>
+
+            <section id="services">
+                <h2>Services</h2>
+                <div class="card-grid" id="services-container">
+                    <div class="loading">Loading...</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/script.js"></script>
+</body>
+
+</html>
